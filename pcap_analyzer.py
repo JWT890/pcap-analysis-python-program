@@ -5,11 +5,38 @@ from scapy.all import *
 from scapy.utils import RawPcapReader
 from scapy.layers.l2 import Ether
 from scapy.layers.inet import IP, UDP, TCP
-from collections import Counter
+from collections import Counter, defaultdict
 import pyshark
+import csv
+import matplotlib.pyplot as plt
+
 packets = rdpcap('pcaps/SkypeIRC.cap')
 
-format_str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+logging.basicConfig(level=INFO, format_str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+SCAN_THRESHOLD = 10
+TIME_WINDOW_SECONDS = 5
+
+KNOWN_MALICIOUS_PORTS = {
+    23: "Telnet",
+    139: "NetBIOS",
+    445: "SMB",
+    3389: "RDP",
+    6667: "IRC",
+    6668: "IRC",
+    5544: "ADB"
+}
+
+WELL_KNOWN_PORTS = {
+    80: "HTTP",
+    443: "HTTPS",
+    21: "FTP",
+    22: 'SSH',
+    53: 'DNS',
+    25: "SMTP",
+    110: "POP3",
+    143: "IMAP"
+}
 
 def pcap_analysis(file_path, filter_ip=None, filter_port=None):
     capture = pyshark.FileCapture(file_path)
@@ -25,9 +52,15 @@ def pcap_analysis(file_path, filter_ip=None, filter_port=None):
         'http_requests': Counter(),
         'udp_ports': Counter(),
         'timestamps': [],
-        'per_packet_analysis': []
+        'per_packet_analysis': [],
+        'detected_anomalies': {
+            'port_scans': [],
+            'malicious_traffic': [],
+            'unusual_port_usage': [],
+            'high_connection_attempts': []
+        }
     }
-
+    port_scan_tracker = defaultdict{list}
     packet_number = 0
     while True:
         packet = capture.next_packet()
@@ -44,11 +77,29 @@ def pcap_analysis(file_path, filter_ip=None, filter_port=None):
             'risks': []
         }
 
-        statistics['total_packets'] += 1
-        statistics['protocols'][packet.highest_layer] = statistics['protocols'].get(packet.highest_layer, 0) + 1
-        statistics['ip_addresses'][packet.ip.src] = statistics['ip_addresses'].get(packet.ip.src, 0) + 1
-        statistics['ip_addresses'][packet.ip.dst] = statistics['ip_addresses'].get(packet.ip.dst, 0) + 1
+        src_ip = getattr(packet, 'ip', None) and packet.ip.src or ''
+        dst_ip = getattr(packet, 'ip', None) and packet.ip.dst or ''
+        src_port = ''
+        dst_port = ''
+        protocol = packet.highest_layer
 
+        if hasattr(packet, 'tcp'):
+            src_port = int(packet.tcp.srcport)
+            dst_port = int(packet.tcp.dstport)
+            statistics['tcp_ports'][src_port] += 1
+        elif hasattr(packet, 'udp'):
+            src_port = int(packet.udp.srcport)
+            dst_port = int(packet.udp.dstport)
+            statistics['udp_ports'][dst_port] += 1
+
+        risks = []
+        if dst_port in KNOWN_MALICIOUS_PORTS:
+            risk_msg = f"Malicious port detected: {dst_port} ({KNOWN_MALICIOUS_PORTS[dst_port]})"
+            statistics['malicious_packets'] += 1
+            statistics['detected_anomalies']['malicious_traffic'].append((
+                
+            ))
+        
     print(statistics)
     print("-------------------------------------")
     print(f"Total Packets: (statistics['total_packets'])")
@@ -64,4 +115,5 @@ def pcap_analysis(file_path, filter_ip=None, filter_port=None):
     print(f"Timestamps: (statistics['timestamps'])")
     print(f"Per-Packet Analysis: (statistics['per_packet_analysis'])")
 
-
+if __name__ == '__main__':
+    pcap_analysis('pcaps/SkypeIRC.cap')
