@@ -11,6 +11,9 @@ import csv
 import matplotlib.pyplot as plt
 from tabulate import tabulate
 from collections import defaultdict
+from scapy.layers.dns import DNS
+from scapy.layers.http import HTTPRequest
+from scapy.packet import Packet
 
 packets = rdpcap('pcaps/SkypeIRC.cap')
 
@@ -26,7 +29,9 @@ KNOWN_MALICIOUS_PORTS = {
     3389: "RDP",
     6667: "IRC",
     6668: "IRC",
-    5544: "ADB"
+    5544: "ADB",
+    389: "LDAP",
+    161: "SNMP"
 }
 
 WELL_KNOWN_PORTS = {
@@ -37,21 +42,28 @@ WELL_KNOWN_PORTS = {
     53: 'DNS',
     25: "SMTP",
     110: "POP3",
-    143: "IMAP"
+    143: "IMAP",
+    3306: "MySQL",
+    990: "FTPS",
+    636: "LDAPS",
+    161: "SNMP"
 }
 
 def summarize_traffic(packets):
     headers = ["Protocol", "Packet Count", "First Timestamp", "Last Timestamp", 'Mean Packet Length']
-    print("\nTraffic Summary: ")
-    print(tabulate(table, headers=headers, tablefmt="grid"))
     table = []
 
     for packet in packets:
         protocol = packet.__class__.__name__
         packet_count = 1
-        first_timestamp = packet.sniff_time.strftime('%Y-%m-%d %H:%M:%S.%f')
-        last_timestamp = packet.sniff_time.strftime('%Y-%m-%d %H:%M:%S.%f')
         mean_packet_length = len(packet)
+
+        if hasattr(packet, 'sniff_time'):
+            first_timestamp = packet.sniff_time.strftime('%Y-%m-%d %H:%M:%S.%f')
+            last_timestamp = packet.sniff_time.strftime('%Y-%m-%d %H:%M:%S.%f')
+        else:
+            first_timestamp = 'Unknown'
+            last_timestamp = 'Unknown'
 
         table.append([protocol, packet_count, first_timestamp, last_timestamp, mean_packet_length])
     print("\nTraffic Summary: ")
@@ -62,6 +74,27 @@ def extract_emails_and_urls(packets):
     urls = set()
     filenames = set()
     image_extentions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
+    
+    for packets in packets:
+        if isinstance(packet, Packet) and packet.haslayer(scapy.layers.inet.TCP) and packet.haslayer(scapy.layers.raw.Raw):
+            payload = packet[Raw].load.decode('utf-8', errors='ignore')
+            email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+            emails['To'].update(re.findall(email_pattern, payload))
+            emails['From'].update(re.findall(email_pattern, payload))
+            url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+            urls.update(re.findall(url_pattern, payload))
+            filename_pattern = r'\b\w+\.\w+b'
+            filenames.update(re.findall(filename_pattern, payload))
+
+
+    print("Extracted Emails: ")
+    print(emails)
+    print("Extracted URLs: ")
+    print(urls)
+    print("Extracted Filenames: ")
+    print(filenames)
+    print("Extracted Image Filenames: ")
+    print(image_extentions)
 
 def pcap_analysis(file_path, filter_ip=None, filter_port=None):
     capture = rdpcap(file_path)
@@ -96,6 +129,12 @@ def pcap_analysis(file_path, filter_ip=None, filter_port=None):
     src_port = ''
     dst_port = ''
     protocol = packet.__class__.__name__
+
+    if src_ip: 
+        statistics['ip_addresses'][src_ip] += 1
+    if dst_ip:
+        statistics['ip_addresses'][dst_ip] += 1
+
 
     if packet.haslayer(TCP):
         src_port = packet[TCP].sport
@@ -158,5 +197,9 @@ def pcap_analysis(file_path, filter_ip=None, filter_port=None):
     print(f"Timestamps: {statistics['timestamps']}")
     print(f"Per-Packet Analysis: {statistics['per_packet_analysis']}")
 
+
 if __name__ == '__main__':
-    pcap_analysis('pcaps\SkypeIRC.cap', filter_ip=None, filter_port=None)
+    packets = rdpcap('pcaps/SkypeIRC.cap')
+    summarize_traffic(packets)
+    extract_emails_and_urls(packets)
+    pcap_analysis('pcaps/SkypeIRC.cap')
