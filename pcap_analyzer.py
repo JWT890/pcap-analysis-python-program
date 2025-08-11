@@ -9,13 +9,15 @@ from collections import Counter, defaultdict
 import pyshark
 import csv
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from datetime import datetime
 from tabulate import tabulate
 from collections import defaultdict
 from scapy.layers.dns import DNS
 from scapy.layers.http import HTTPRequest
 from scapy.packet import Packet
 
-packets = rdpcap('pcaps/SkypeIRC.cap')
+packets = rdpcap('pcaps/smallFlows.pcap')
 
 logging.basicConfig(level=logging.INFO, format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
@@ -197,9 +199,31 @@ def pcap_analysis(file_path, filter_ip=None, filter_port=None):
     print(f"Timestamps: {statistics['timestamps']}")
     print(f"Per-Packet Analysis: {statistics['per_packet_analysis']}")
 
+def plot_traffic_time(packets, interval=60):
+    time_intervals = {}
+    for packets in packets:
+        timestamp = packet.time
+        if isinstance(timestamp, float):
+            time_key = int(timestamp // interval) * interval
+            time_intervals[time_key] = time_intervals.get(time_key, 0) + 1
+        else:
+            print("Error: timestamp is not a float")
+    
+    times = [time_key for time_key in sorted(time_intervals.keys())]
+    packet_counts = [time_intervals[time_key] for time_key in sorted(time_intervals.keys())]
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(times, packet_counts, marker='o')
+    plt.title("Packet Counts Over Time")
+    plt.xlabel("Title")
+    plt.ylabel("Packet Count")
+    plt.grid(True)
+    plt.show()
+
 
 if __name__ == '__main__':
-    packets = rdpcap('pcaps/SkypeIRC.cap')
+    packets = rdpcap('pcaps/smallFlows.pcap')
     summarize_traffic(packets)
     extract_emails_and_urls(packets)
-    pcap_analysis('pcaps/SkypeIRC.cap')
+    pcap_analysis('pcaps/smallFlows.pcap')
+    plot_traffic_time(packets, interval=60)
