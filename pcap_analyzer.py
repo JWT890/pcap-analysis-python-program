@@ -17,7 +17,7 @@ from scapy.layers.dns import DNS
 from scapy.layers.http import HTTPRequest
 from scapy.packet import Packet
 
-packets = rdpcap('pcaps/ipv4frags.pcap')
+packets = rdpcap('pcaps/SkypeIRC.cap')
 
 logging.basicConfig(level=logging.INFO, format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
@@ -77,8 +77,8 @@ def extract_emails_and_urls(packets):
     filenames = set()
     image_extentions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
     
-    for packets in packets:
-        if isinstance(packet, Packet) and packet.haslayer(scapy.layers.inet.TCP) and packet.haslayer(scapy.layers.raw.Raw):
+    for packet in packets:
+        if isinstance(packet, Packet) and packet.haslayer(scapy.layers.inet.TCP) and packet.haslayer(Raw):
             payload = packet[Raw].load.decode('utf-8', errors='ignore')
             email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
             emails['To'].update(re.findall(email_pattern, payload))
@@ -218,8 +218,8 @@ def plot_traffic_time(packets, interval=60):
 
 
 if __name__ == '__main__':
-    packets = rdpcap('pcaps/ipv4frags.pcap')
+    packets = rdpcap('pcaps/SkypeIRC.cap')
     summarize_traffic(packets)
     extract_emails_and_urls(packets)
-    pcap_analysis('pcaps/ipv4frags.pcap')
+    pcap_analysis('pcaps/SkypeIRC.cap')
     plot_traffic_time(packets, interval=60)
