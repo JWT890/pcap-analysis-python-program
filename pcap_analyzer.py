@@ -18,7 +18,7 @@ from scapy.layers.http import HTTPRequest
 from scapy.packet import Packet
 
 # Reads the pcap, cap, pcapng file
-packets = rdpcap('pcaps/SkypeIRC.cap')
+packets = rdpcap('pcaps/SkypeIRC.cap') # replace with a different file to analyze
 
 # Configures logging
 logging.basicConfig(level=logging.INFO, format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -182,6 +182,7 @@ def pcap_analysis(file_path, filter_ip=None, filter_port=None):
     if dst_ip:
         statistics['ip_addresses'][dst_ip] += 1
 
+
     # if the function has tcp ports in the src and dst
     if packet.haslayer(TCP):
         src_port = packet[TCP].sport
@@ -274,6 +275,17 @@ def pcap_analysis(file_path, filter_ip=None, filter_port=None):
     print(f"Timestamps: {statistics['timestamps']}")
     print(f"Per-Packet Analysis: {statistics['per_packet_analysis']}")
 
+def scan_ips(packets):
+    ip_counter = Counter()
+    for pkt in packets:
+        if pkt.haslayer(IP):
+            ip_counter[pkt[IP].src] += 1
+            ip_counter[pkt[IP].dst] += 1
+    print("\nIP Address Counts: ")
+    for ip, count in ip_counter.items():
+        print(f"{ip}: {count}")
+    return ip_counter
+
 # function that plots it
 def plot_traffic_time(packets, interval=60):
     # plots the packets
@@ -291,8 +303,9 @@ def plot_traffic_time(packets, interval=60):
 
 # gets the functions to run
 if __name__ == '__main__':
-    packets = rdpcap('pcaps/SkypeIRC.cap')
+    packets = rdpcap('pcaps/SkypeIRC.cap') # replace with a different file to analyze
     summarize_traffic(packets)
     extract_emails_and_urls(packets)
-    pcap_analysis('pcaps/SkypeIRC.cap')
+    pcap_analysis('pcaps/SkypeIRC.cap') # replace with a different file to analyze
+    scan_ips(packets) 
     plot_traffic_time(packets, interval=60)
