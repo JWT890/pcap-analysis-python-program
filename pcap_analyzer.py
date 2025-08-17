@@ -21,7 +21,7 @@ import os
 
 
 # Reads the pcap, cap, pcapng file
-packets = rdpcap('pcaps/smallFlows.pcap') # replace with a different file to analyze
+packets = rdpcap('pcaps/SkypeIRC.cap') # replace with a different file to analyze
 
 # Configures logging
 logging.basicConfig(level=logging.INFO, format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -39,9 +39,20 @@ KNOWN_MALICIOUS_PORTS = {
     3389: "RDP",
     6667: "IRC",
     6668: "IRC",
+    6669: "IRC",
     5544: "ADB",
     389: "LDAP",
-    161: "SNMP"
+    161: "SNMP", 
+    22: "SSH",
+    4444: "Metasploit",
+    143: "IMAP",
+    110: "POP3", 
+    21: 'FTP',
+    53: 'DNS',
+    80: "HTTP",
+    25: "SMTP",
+    69: "TFTP",
+    3386: "MySQL"
 }
 
 # well known ports that are being looked for
@@ -57,7 +68,8 @@ WELL_KNOWN_PORTS = {
     3306: "MySQL",
     990: "FTPS",
     636: "LDAPS",
-    161: "SNMP"
+    161: "SNMP", 
+    443: "HTTPS"
 }
 
 # function to summarize the traffic within the file
@@ -136,6 +148,7 @@ def extract_emails_and_urls(packets):
     # prints extracted image filenames
     print("Extracted Image Filenames: ")
     print(image_extentions)
+
 
 # function that analyzes the pcap
 def pcap_analysis(file_path, filter_ip=None, filter_port=None):
@@ -333,9 +346,13 @@ def plot_traffic_time(packets, interval=60):
     plt.show()
 
 def write_to_csv(filename, headers, data):
+    if not data:
+        print("No data to write")
+        return 
+
     with open(filename, 'w', newline='') as file:
         if isinstance(data[0], dict):
-            writer = csv.DictWriter(f, fieldnames=headers)
+            writer = csv.DictWriter(file, fieldnames=headers)
             writer.writeheader()
             writer.writerows(data)
         else:
@@ -345,11 +362,11 @@ def write_to_csv(filename, headers, data):
 
 # gets the functions to run
 if __name__ == '__main__':
-    packets = rdpcap('pcaps/smallFlows.pcap') # replace with a different file to analyze
+    packets = rdpcap('pcaps/SkypeIRC.cap') # replace with a different file to analyze
     headers, data = summarize_traffic(packets)
     write_to_csv("traffic_summary.csv", headers, data)
     extract_emails_and_urls(packets)
-    statistics = pcap_analysis('pcaps/smallFlows.pcap') # replace with a different file to analyze
+    statistics = pcap_analysis('pcaps/SkypeIRC.cap') # replace with a different file to analyze
     headers, data = scan_ips(packets)
     write_to_csv("ip_counts.csv", headers, data) 
     plot_traffic_time(packets, interval=60)
