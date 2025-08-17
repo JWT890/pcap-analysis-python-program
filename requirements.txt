@@ -1,0 +1,10 @@
+matplotlib
+scapy
+logging
+rdpcap
+seaborn
+collections
+csv
+tabulate
+httprequest
+pyshark
