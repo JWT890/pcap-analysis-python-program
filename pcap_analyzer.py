@@ -90,6 +90,7 @@ def summarize_traffic(packets):
     print("\nTraffic Summary: ")
     # prints the table as a grid
     print(tabulate(table, headers=headers, tablefmt="grid"))
+    return headers, table
 
 # function to extract emails and urls
 def extract_emails_and_urls(packets):
@@ -296,7 +297,9 @@ def scan_ips(packets):
     for ip, count in ip_counter.items():
         # prints the ip count
         print(f"{ip}: {count}")
-    return ip_counter
+    headers = ["IP", "Count"]
+    data = [(ip, count) for ip, count in ip_counter.items()]
+    return headers, data
 
 # function that plots it
 def plot_traffic_time(packets, interval=60):
@@ -329,13 +332,25 @@ def plot_traffic_time(packets, interval=60):
     plt.grid(True)
     plt.show()
 
-
+def write_to_csv(filename, headers, data):
+    with open(filename, 'w', newline='') as file:
+        if isinstance(data[0], dict):
+            writer = csv.DictWriter(f, fieldnames=headers)
+            writer.writeheader()
+            writer.writerows(data)
+        else:
+            writer = csv.writer(file)
+            writer.writerow(headers)
+            writer.writerows(data)
 
 # gets the functions to run
 if __name__ == '__main__':
     packets = rdpcap('pcaps/smallFlows.pcap') # replace with a different file to analyze
-    summarize_traffic(packets)
+    headers, data = summarize_traffic(packets)
+    write_to_csv("traffic_summary.csv", headers, data)
     extract_emails_and_urls(packets)
     statistics = pcap_analysis('pcaps/smallFlows.pcap') # replace with a different file to analyze
-    scan_ips(packets) 
+    headers, data = scan_ips(packets)
+    write_to_csv("ip_counts.csv", headers, data) 
     plot_traffic_time(packets, interval=60)
+    
