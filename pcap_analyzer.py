@@ -10,15 +10,18 @@ import pyshark
 import csv
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from datetime import datetime
+from datetime import datetime, timedelta
 from tabulate import tabulate
 from collections import defaultdict
 from scapy.layers.dns import DNS
 from scapy.layers.http import HTTPRequest
 from scapy.packet import Packet
+import seaborn as sns
+import os
+
 
 # Reads the pcap, cap, pcapng file
-packets = rdpcap('pcaps/SkypeIRC.cap') # replace with a different file to analyze
+packets = rdpcap('pcaps/smallFlows.pcap') # replace with a different file to analyze
 
 # Configures logging
 logging.basicConfig(level=logging.INFO, format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -275,37 +278,64 @@ def pcap_analysis(file_path, filter_ip=None, filter_port=None):
     print(f"Timestamps: {statistics['timestamps']}")
     print(f"Per-Packet Analysis: {statistics['per_packet_analysis']}")
 
+
+# function that scans for ip addresses
 def scan_ips(packets):
+    # scans the ips
     ip_counter = Counter()
+    # iterates through the packets
     for pkt in packets:
         if pkt.haslayer(IP):
+            # adds the ip for src
             ip_counter[pkt[IP].src] += 1
+            # adds the ip for dst
             ip_counter[pkt[IP].dst] += 1
+    # prints the ip addresses
     print("\nIP Address Counts: ")
+    # iterates through the ip addresses
     for ip, count in ip_counter.items():
+        # prints the ip count
         print(f"{ip}: {count}")
     return ip_counter
 
 # function that plots it
 def plot_traffic_time(packets, interval=60):
+    if not packets:
+        return
     # plots the packets
-    timestamps = [packet.time for packet in packets]
-    # plots the packets
-    packet_counts = [1] * len(packets)
+    start_time = datetime.fromtimestamp(float(packets[0].time))
+    counts = Counter()
 
+    # iterates throught the packets
+    for pkt in packets:
+        # checks for time
+        delta = int(pkt.time - packets[0].time)
+        bin_time = (delta // interval) * interval
+        # counts the time
+        counts[bin_time] += 1
+    # gets the time
+    times = [start_time + timedelta(seconds=i) for i in sorted(counts.keys())]
+    # gets the counts
+    packet_counts = [counts[i] for i in sorted(counts.keys())]
+
+    sns.set()
     plt.figure(figsize=(12, 6))
-    plt.plot(timestamps, packet_counts, marker='o')
+    plt.plot(times, packet_counts, marker='o')
     plt.title("Packet Counts Over Time")
     plt.xlabel("Time (seconds)")
     plt.ylabel("Packet Count")
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M:%S'))
+    plt.gcf().autofmt_xdate()
     plt.grid(True)
     plt.show()
 
+
+
 # gets the functions to run
 if __name__ == '__main__':
-    packets = rdpcap('pcaps/SkypeIRC.cap') # replace with a different file to analyze
+    packets = rdpcap('pcaps/smallFlows.pcap') # replace with a different file to analyze
     summarize_traffic(packets)
     extract_emails_and_urls(packets)
-    pcap_analysis('pcaps/SkypeIRC.cap') # replace with a different file to analyze
+    statistics = pcap_analysis('pcaps/smallFlows.pcap') # replace with a different file to analyze
     scan_ips(packets) 
     plot_traffic_time(packets, interval=60)
