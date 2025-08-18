@@ -15,5 +15,6 @@ Example of output in the command console:
 The program will also visualize the traffic from the file and output it for visualization  
 Example:  
 <img width="1200" height="600" alt="Figure_1" src="https://github.com/user-attachments/assets/555278ec-7b92-46f6-ad43-bb6e5aef84a0" />
-
+*Visualization of data from the SkypeIRC file in the pcaps file section*  
+The program will also output two csv files containing the IP Addresses in the file and the traffic summary in the file
 
