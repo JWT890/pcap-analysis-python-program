@@ -18,6 +18,7 @@ from scapy.layers.http import HTTPRequest
 from scapy.packet import Packet
 import seaborn as sns
 import os
+import re
 
 
 # Reads the pcap, cap, pcapng file
