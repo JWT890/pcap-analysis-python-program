@@ -9,7 +9,8 @@ With Python this allows for greater analysis of a PCAP file using libraries such
 
 To get this program to run, add a Wireshark file to the pcaps file:  
 <img width="497" height="177" alt="image" src="https://github.com/user-attachments/assets/eec454b0-d4f9-45eb-8fc2-d5066209615f" />  
-And type the command: python pcap_analyzer.py, to get the program to run the checker on the file.  
+And type the command: python pcap_analyzer.py, to get the program to run the checker on the file.
+After running python pcap_analyzer.py you will be prompted to enter the path of the pcap file, so type pcaps/pcap file insert. For example, pcap/SkypeIRC.cap and run it  
 Example of output in the command console:  
 <img width="1133" height="226" alt="image" src="https://github.com/user-attachments/assets/93d7ac94-130f-4551-be56-bacadcb797d4" />  
 The program will also visualize the traffic from the file and output it for visualization  
