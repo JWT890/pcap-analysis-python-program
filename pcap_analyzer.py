@@ -22,7 +22,8 @@ import re
 
 
 # Reads the pcap, cap, pcapng file
-packets = rdpcap('pcaps/SkypeIRC.cap') # replace with a different file to analyze
+pcap_file_path = input("Please enter the path to the pcap file: ")
+packets = rdpcap(pcap_file_path) # replace with a different file to analyze
 
 # Configures logging
 logging.basicConfig(level=logging.INFO, format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -363,11 +364,11 @@ def write_to_csv(filename, headers, data):
 
 # gets the functions to run
 if __name__ == '__main__':
-    packets = rdpcap('pcaps/SkypeIRC.cap') # replace with a different file to analyze
+    packets = rdpcap(pcap_file_path) # replace with a different file to analyze
     headers, data = summarize_traffic(packets)
     write_to_csv("traffic_summary.csv", headers, data)
     extract_emails_and_urls(packets)
-    statistics = pcap_analysis('pcaps/SkypeIRC.cap') # replace with a different file to analyze
+    statistics = pcap_analysis(pcap_file_path) # replace with a different file to analyze
     headers, data = scan_ips(packets)
     write_to_csv("ip_counts.csv", headers, data) 
     plot_traffic_time(packets, interval=60)
