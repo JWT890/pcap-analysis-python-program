@@ -77,7 +77,7 @@ WELL_KNOWN_PORTS = {
 # function to summarize the traffic within the file
 def summarize_traffic(packets):
     # headers of whats in the table
-    headers = ["Protocol", "Packet Count", "First Timestamp", "Last Timestamp", 'Mean Packet Length']
+    headers = ["Protocol", "Src Port", "Dst port", "Packet Count", "First Timestamp", "Last Timestamp", 'Mean Packet Length']
     table = []
 
     # iterates through the packets
@@ -87,7 +87,16 @@ def summarize_traffic(packets):
         packet_count = 1
         # checks the length of the packet
         mean_packet_length = len(packet)
+        src_port = ''
+        dst_port = ''
 
+        # checks if the packet has a source and destination port
+        if packet.haslayer(TCP) or packet.haslayer(UDP):
+            # checks for src port
+            src_port = packet[TCP].sport if packet.haslayer(TCP) else packet[UDP].sport
+            # checks for dst port
+            dst_port = packet[TCP].dport if packet.haslayer(TCP) else packet[UDP].dport
+        
         # checks if the packet has a timestamp
         if hasattr(packet, 'sniff_time'):
             # checks the first timestamp
@@ -100,7 +109,7 @@ def summarize_traffic(packets):
             last_timestamp = 'Unknown'
 
         # adds the data to the table
-        table.append([protocol, packet_count, first_timestamp, last_timestamp, mean_packet_length])
+        table.append([protocol, src_port, dst_port, packet_count, first_timestamp, last_timestamp, mean_packet_length])
     print("\nTraffic Summary: ")
     # prints the table as a grid
     print(tabulate(table, headers=headers, tablefmt="grid"))
@@ -186,7 +195,7 @@ def pcap_analysis(file_path, filter_ip=None, filter_port=None):
         packet_number += 1
         # prints total packet
         statistics['total_packets'] += 1
-
+ 
     # checks the source and destination ip
     src_ip = getattr(packet, 'ip', None) and packet.ip.src or ''
     dst_ip = getattr(packet, 'ip', None) and packet.ip.dst or ''
