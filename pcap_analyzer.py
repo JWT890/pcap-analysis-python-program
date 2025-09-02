@@ -147,18 +147,18 @@ def extract_emails_and_urls(packets):
             # checks for pattern
             filenames.update(re.findall(filename_pattern, payload))
 
-    # prints extracted emails
-    print("Extracted Emails: ")
-    print(emails)
-    # prints extracted urls
-    print("Extracted URLs: ")
-    print(urls)
-    # prints extracted filenames
-    print("Extracted Filenames: ")
-    print(filenames)
-    # prints extracted image filenames
-    print("Extracted Image Filenames: ")
-    print(image_extentions)
+    # creates a csv to store the data
+    data = []
+    for email_type, email_set in emails.items():
+        for email in email_set:
+            data.append({'Email Type': email_type, 'Email': email})
+    for url in urls:
+        data.append({'Email Type': 'URL', 'Email': url})
+    for filename in filenames:
+        data.append({'Email Type': 'Filename', 'Email': filename})
+
+    # return it
+    return data
 
 
 # function that analyzes the pcap
@@ -373,11 +373,12 @@ def write_to_csv(filename, headers, data):
 
 # gets the functions to run
 if __name__ == '__main__':
-    packets = rdpcap(pcap_file_path) # replace with a different file to analyze
+    packets = rdpcap(pcap_file_path) 
     headers, data = summarize_traffic(packets)
     write_to_csv("traffic_summary.csv", headers, data)
-    extract_emails_and_urls(packets)
-    statistics = pcap_analysis(pcap_file_path) # replace with a different file to analyze
+    email_data = extract_emails_and_urls(packets)
+    write_to_csv("extracted_data.csv", ['Email Type', 'Email'], email_data)
+    statistics = pcap_analysis(pcap_file_path) 
     headers, data = scan_ips(packets)
     write_to_csv("ip_counts.csv", headers, data) 
     plot_traffic_time(packets, interval=60)
