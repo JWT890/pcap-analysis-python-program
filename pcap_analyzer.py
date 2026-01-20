@@ -1,3 +1,5 @@
+# type: ignore
+
 import logging
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 import argparse
