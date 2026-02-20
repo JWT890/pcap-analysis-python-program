@@ -363,7 +363,7 @@ def write_to_csv(filename, headers, data):
         print("No data to write")
         return 
 
-    with open(filename, 'w', newline='') as file:
+    with open(filename, 'w', newline='', encoding='utf-8') as file:
         if isinstance(data[0], dict):
             writer = csv.DictWriter(file, fieldnames=headers)
             writer.writeheader()

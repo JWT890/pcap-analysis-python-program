@@ -1,12 +1,9 @@
 Email Type,Email
-URL,https://landscape.canonical.com
-URL,https://ubuntu.com/esm
-URL,http://purl.org/dc/elements/1.1/
-URL,http://www.w3.org/1999/02/22-rdf-syntax-ns
-URL,https://help.ubuntu.com
-URL,https://ubuntu.com/pro
-URL,https://ubuntu.com/engage/secure-kubernetes-at-the-edge
-URL,http://ns.adobe.com/xap/1.0/
-Filename,help.ub
-Filename,i.gb
-Filename,ns.adob
+To,zlib@openssh.com
+To,rijndael-cbc@lysator.liu.se
+To,hmac-ripemd160@openssh.com
+To,umac-64@openssh.com
+From,zlib@openssh.com
+From,rijndael-cbc@lysator.liu.se
+From,hmac-ripemd160@openssh.com
+From,umac-64@openssh.com
