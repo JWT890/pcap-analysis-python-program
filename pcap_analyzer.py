@@ -165,145 +165,160 @@ def extract_emails_and_urls(packets):
 
 # function that analyzes the pcap
 def pcap_analysis(file_path, filter_ip=None, filter_port=None):
-    # gets the path of the file
-    capture = rdpcap(file_path)
-    # iterates through the packets looking for the statistics below
-    statistics = {
-        'total_packets': 0,
-        'malicious_packets': 0,
-        'benign_packets': 0,
-        'protocols': Counter(),
-        'ip_addresses': Counter(),
-        'dns_queries': Counter(),
-        'tcp_ports': Counter(),
-        'udp_ports': Counter(),
-        'http_requests': Counter(),
-        'udp_ports': Counter(),
-        'timestamps': [],
-        'per_packet_analysis': [],
-        'detected_anomalies': {
-            'port_scans': [],
-            'malicious_traffic': [],
-            'unusual_port_usage': [],
-            'high_connection_attempts': []
-        }
-    }
-    # scans the port
-    port_scan_tracker = defaultdict(list)
-    # iterates through the packets
-    packet_number = 0
-    for packet in packets:
-        # adds for every packet
-        packet_number += 1
-        # prints total packet
-        statistics['total_packets'] += 1
- 
-    # checks the source and destination ip
-    src_ip = getattr(packet, 'ip', None) and packet.ip.src or ''
-    dst_ip = getattr(packet, 'ip', None) and packet.ip.dst or ''
-    # checks the source and destination port
-    src_port = ''
-    dst_port = ''
-    protocol = packet.__class__.__name__
-
-    # adds the source and destination ip
-    if src_ip: 
-        statistics['ip_addresses'][src_ip] += 1
-    if dst_ip:
-        statistics['ip_addresses'][dst_ip] += 1
-
-
-    # if the function has tcp ports in the src and dst
-    if packet.haslayer(TCP):
-        src_port = packet[TCP].sport
-        dst_port = packet[TCP].dport
-        # prints the tcp ports for src
-        statistics['tcp_ports'][src_port] += 1
-        # prints the tcp ports for dst
-        statistics['tcp_ports'][dst_port] += 1
+   # gets the path of the file
+       capture = rdpcap(file_path)
+       # iterates through the packets looking for the statistics below
+       statistics = {
+           'total_packets': 0,
+           'malicious_packets': 0,
+           'benign_packets': 0,
+           'protocols': Counter(),
+           'ip_addresses': Counter(),
+           'dns_queries': Counter(),
+           'tcp_ports': Counter(),
+           'udp_ports': Counter(),
+           'http_requests': Counter(),
+           'udp_ports': Counter(),
+           'timestamps': [],
+           'per_packet_analysis': [],
+           'detected_anomalies': {
+               'port_scans': [],
+               'malicious_traffic': [],
+               'unusual_port_usage': [],
+               'high_connection_attempts': []
+           }
+       }
+       # scans the port
+       port_scan_tracker = defaultdict(list)
+       # iterates through the packets
+       packet_number = 0
     
-    # if the packet has UDP ports
-    elif packet.haslayer(UDP):
-        src_port = packet[UDP].sport
-        dst_port = packet[UDP].dport
-        if dst_port:
-            # prints the udp ports
-            statistics['udp_ports'][dst_port] += 1
-
-    # if the packet has http
-    if packet.haslayer(HTTPRequest):
-        # prints the http requests
-        statistics['http_requests'][packet[HTTPRequest].Path] += 1
+       # FIX: the entire analysis block was outside the for loop (indentation
+       # bug) so only the last packet was ever processed. Also fixed src_ip/
+       # dst_ip extraction which used a pyshark-style getattr that never works
+       # with scapy, and added benign_packets increment which was missing.
+       for packet in capture:
+           packet_number += 1
+           statistics['total_packets'] += 1
     
-    # prints the timestamps
-    statistics['timestamps'].append(packet.time)
-
-    # identifies the risks
-    risks = []
-    # if the dst port has known malicious ports
-    if dst_port in KNOWN_MALICIOUS_PORTS:
-        # prints the port that is malicious
-        risk_msg = f"Malicious port detected: {dst_port} ({KNOWN_MALICIOUS_PORTS[dst_port]})"
-        # adds to the statistics
-        statistics['malicious_packets'] += 1
-        # prints the anomalies and traffic
-        statistics['detected_anomalies']['malicious_traffic'].append({
-            # prints the packet number
-            'packet_number': packet_number,
-            # prints the src ip
-            'src_ip': src_ip,
-            # prints the dst ip
-            'dst_ip': dst_ip,
-            # prints the dst port
-            'port': dst_port,
-            # prints the risk description
-            'description': risk_msg
-        })
-        risks.append(risk_msg)
-    # if the dst port has well known ports
-    elif dst_port and dst_port not in WELL_KNOWN_PORTS:
-        # prints the unusual port usage
-        risk_msg = f"Unusual port usage: {dst_port}"
-        # adds to the statistics
-        statistics['detected_anomalies']['unusual_port_usage'].append({
-            # prints the packet number and other information
-            'packet_number': packet_number,
-            'src_ip': src_ip,
-            'dst_ip': dst_ip,
-            'port': dst_port,
-            'description': risk_msg
-        })
-    # checks for timestamp
-    try:
-        timestamp = packet.sniff_time.strftime('%Y-%m-%d %H:%M:%S.%f')
-    except (AttributeError, TypeError):
-        timestamp = 'Unknown'
-    # prints a per packet analysis of the file
-    statistics['per_packet_analysis'].append({
-        # prints the packet number through risk
-        'packet_number': packet_number,
-        'src_ip': src_ip,
-        'dst_ip': dst_ip,
-        'src_port': src_port,
-        'dst_port': dst_port,
-        'protocol': protocol,
-        'timestamp': timestamp,
-        'risks': risks
-    })
-    # prints the statsistcs below
-    print(statistics)
-    print("-------------------------------------")
-    print(f"Total Packets: {statistics['total_packets']}")
-    print(f"Malicious Packets: {statistics['malicious_packets']}")
-    print(f"Benign Packets: {statistics['benign_packets']}")
-    print(f"Protocols: {statistics['protocols']}")
-    print(f"IP Addresses: {statistics['ip_addresses']}")
-    print(f"DNS Queries: {statistics['dns_queries']}")
-    print(f"TCP Ports: {statistics['tcp_ports']}")
-    print(f"UDP Ports: {statistics['udp_ports']}")
-    print(f"HTTP Requests: {statistics['http_requests']}")
-    print(f"Timestamps: {statistics['timestamps']}")
-    print(f"Per-Packet Analysis: {statistics['per_packet_analysis']}")
+           src_ip = packet[IP].src if packet.haslayer(IP) else ''
+           dst_ip = packet[IP].dst if packet.haslayer(IP) else ''
+           src_port = ''
+           dst_port = ''
+           protocol = packet.__class__.__name__
+    
+           # adds the source and destination ip
+           if src_ip: 
+               statistics['ip_addresses'][src_ip] += 1
+           if dst_ip:
+               statistics['ip_addresses'][dst_ip] += 1
+    
+           # if the function has tcp ports in the src and dst
+           if packet.haslayer(TCP):
+               src_port = packet[TCP].sport
+               dst_port = packet[TCP].dport
+               # prints the tcp ports for src
+               statistics['tcp_ports'][src_port] += 1
+               # prints the tcp ports for dst
+               statistics['tcp_ports'][dst_port] += 1
+           
+           # if the packet has UDP ports
+           elif packet.haslayer(UDP):
+               src_port = packet[UDP].sport
+               dst_port = packet[UDP].dport
+               if dst_port:
+                   # prints the udp ports
+                   statistics['udp_ports'][dst_port] += 1
+    
+           # DNS query extraction (was in statistics dict but never populated)
+           if packet.haslayer(DNS) and packet.haslayer(DNSQR):
+               try:
+                   query = packet[DNSQR].qname.decode('utf-8', errors='ignore').rstrip('.')
+                   statistics['dns_queries'][query] += 1
+               except Exception:
+                   pass
+    
+           # if the packet has http
+           if packet.haslayer(HTTPRequest):
+               # prints the http requests
+               statistics['http_requests'][packet[HTTPRequest].Path] += 1
+           
+           # prints the timestamps
+           statistics['timestamps'].append(packet.time)
+    
+           # identifies the risks
+           risks = []
+           # if the dst port has known malicious ports
+           if dst_port in KNOWN_MALICIOUS_PORTS:
+               # prints the port that is malicious
+               risk_msg = f"Malicious port detected: {dst_port} ({KNOWN_MALICIOUS_PORTS[dst_port]})"
+               # adds to the statistics
+               statistics['malicious_packets'] += 1
+               # prints the anomalies and traffic
+               statistics['detected_anomalies']['malicious_traffic'].append({
+                   # prints the packet number
+                   'packet_number': packet_number,
+                   # prints the src ip
+                   'src_ip': src_ip,
+                   # prints the dst ip
+                   'dst_ip': dst_ip,
+                   # prints the dst port
+                   'port': dst_port,
+                   # prints the risk description
+                   'description': risk_msg
+               })
+               risks.append(risk_msg)
+           # if the dst port has well known ports
+           elif dst_port and dst_port not in WELL_KNOWN_PORTS:
+               # prints the unusual port usage
+               risk_msg = f"Unusual port usage: {dst_port}"
+               # adds to the statistics
+               statistics['detected_anomalies']['unusual_port_usage'].append({
+                   # prints the packet number and other information
+                   'packet_number': packet_number,
+                   'src_ip': src_ip,
+                   'dst_ip': dst_ip,
+                   'port': dst_port,
+                   'description': risk_msg
+               })
+    
+           # FIX: benign_packets was never incremented
+           if not risks:
+               statistics['benign_packets'] += 1
+    
+           # checks for timestamp
+           try:
+               timestamp = datetime.fromtimestamp(float(packet.time)).strftime('%Y-%m-%d %H:%M:%S.%f')
+           except (AttributeError, TypeError):
+               timestamp = 'Unknown'
+    
+           # prints a per packet analysis of the file
+           statistics['per_packet_analysis'].append({
+               # prints the packet number through risk
+               'packet_number': packet_number,
+               'src_ip': src_ip,
+               'dst_ip': dst_ip,
+               'src_port': src_port,
+               'dst_port': dst_port,
+               'protocol': protocol,
+               'timestamp': timestamp,
+               'risks': risks
+           })
+    
+       # prints the statsistcs below
+       print(statistics)
+       print("-------------------------------------")
+       print(f"Total Packets: {statistics['total_packets']}")
+       print(f"Malicious Packets: {statistics['malicious_packets']}")
+       print(f"Benign Packets: {statistics['benign_packets']}")
+       print(f"Protocols: {statistics['protocols']}")
+       print(f"IP Addresses: {statistics['ip_addresses']}")
+       print(f"DNS Queries: {statistics['dns_queries']}")
+       print(f"TCP Ports: {statistics['tcp_ports']}")
+       print(f"UDP Ports: {statistics['udp_ports']}")
+       print(f"HTTP Requests: {statistics['http_requests']}")
+       print(f"Timestamps: {statistics['timestamps']}")
+       print(f"Per-Packet Analysis: {statistics['per_packet_analysis']}")
 
 
 # function that scans for ip addresses
@@ -384,4 +399,3 @@ if __name__ == '__main__':
     headers, data = scan_ips(packets)
     write_to_csv("ip_counts.csv", headers, data) 
     plot_traffic_time(packets, interval=60)
-    

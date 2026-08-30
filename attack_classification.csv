@@ -1,0 +1,8 @@
+attack,src_ip,dst_ip,first_packet,severity,level,rule,detection,evidence
+SSH Brute Force,192.168.56.150,(port 22),356,CRITICAL,10,Rule 40111 / Rule 5712,Wazuh host alert,14 SYN packets to port 22 within 5s
+Directory Brute Force (Gobuster),192.168.56.121,(HTTP),3730,CRITICAL,10,Rule 31151,Wazuh + MITRE map,"218 HTTP 404 responses, 0 HEAD requests"
+SQL Injection (SQLmap),192.168.56.150,(HTTP),2902,MEDIUM,6,Rule 31103,Wazuh web attack,SQLi pattern in request: name[0;insert%20into%20users%20%28uid%2Cname%2Cpass%2Cmail%2Cstatus%29%20select%20max%28uid%29%2B1%2C%27jlnvsjhwyu%27%2C
+CVE Vulnerability Scan (nmap NSE),192.168.56.150,(HTTP),3138,HIGH,9,CVE-2026-60002,CVEs identified,"User-Agent header contains ""Nmap Scripting Engine"""
+ARP Spoofing / MITM,08:00:27:28:5b:19,192.168.56.2,756,HIGH,8,N/A — pcap capture,Wireshark pcap,"IP 192.168.56.2 claimed by 2 different MACs: 08:00:27:28:5b:19, 08:00:27:e0:c0:d6"
+Full Port Scan (nmap),192.168.56.121,(all ports),385,CRITICAL,10,Rule 31151,Suricata + Wazuh,Port scan: 350 distinct ports contacted within 5s
+Full Port Scan (nmap),192.168.56.150,(all ports),778,CRITICAL,10,Rule 31151,Suricata + Wazuh,Port scan: 1000 distinct ports contacted within 5s
